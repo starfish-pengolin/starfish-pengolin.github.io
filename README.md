@@ -23,7 +23,7 @@ A high-performance, responsive mobile interface framework designed for cross-pla
 
 **Admin Authentication:**
 * **Trigger:** Click the **Green Dot** in the header.
-* **Key:** `...38A71...?`
+* **Key:** `...........?`
 * **Effect:** Unlocks Matrix-Rain Engine and Lester Terminal.
 
 **Panic & Ghost Protocols:**
