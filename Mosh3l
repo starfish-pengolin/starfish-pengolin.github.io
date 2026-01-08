@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOSH3L NEXUS OS</title>
+    <style>
+        :root { 
+            --m3l-green: #2ecc71; 
+            --m3l-bg: #0f0f0f; 
+            --m3l-ghost: 0.15;
+        }
+        
+        * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+        
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: #fff; transition: 0.3s; overflow: hidden;
+        }
+
+        /* --- SHARED STATES --- */
+        .admin-active { background: var(--m3l-bg) !important; color: white; }
+        .ghost { opacity: var(--m3l-ghost) !important; filter: grayscale(1); }
+        .ghost:hover { opacity: 0.5 !important; }
+
+        /* --- BACKGROUND GOOGLE UI --- */
+        .top-nav { display: flex; justify-content: flex-end; align-items: center; padding: 15px 25px; gap: 20px; font-size: 13px; position: relative; z-index: 1; }
+        .top-nav a { text-decoration: none; color: #000; transition: 0.3s; }
+        .admin-active .top-nav a { color: #888; }
+
+        .grid-icon { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; cursor: pointer; padding: 5px; }
+        .dot-icon { width: 4px; height: 4px; background: #5f6368; border-radius: 50%; }
+        .admin-active .dot-icon { background: var(--m3l-green); }
+
+        .main-search { display: flex; flex-direction: column; align-items: center; margin-top: 10vh; transition: 0.5s; }
+        .logo { font-size: 80px; font-weight: bold; margin-bottom: 30px; }
+        .logo span { color: var(--m3l-green); }
+        
+        .search-box { 
+            width: 90%; max-width: 584px; border: 1px solid #dfe1e5; border-radius: 24px;
+            padding: 12px 20px; display: flex; align-items: center; transition: 0.3s; background: white;
+        }
+        .admin-active .search-box { border-color: var(--m3l-green); background: #1a1a1a; }
+        .search-box input { border: none; outline: none; width: 100%; font-size: 16px; background: transparent; color: inherit; }
+
+        .shortcuts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; margin-top: 40px; }
+        .shortcut { text-align: center; cursor: pointer; width: 80px; font-size: 12px; }
+        .icon-circle { width: 48px; height: 48px; background: #f1f3f4; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: 0.3s; }
+        .admin-active .icon-circle { background: #333; }
+
+        /* --- FLOATING G-PHONE --- */
+        #g-phone {
+            position: absolute; width: 300px; height: 520px; top: 100px; left: 50px;
+            background: #000; border: 1px solid #333; border-radius: 18px;
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5); z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+
+        #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 1s; }
+        .admin-active #matrix-canvas { opacity: 0.25; }
+
+        .phone-header { height: 35px; background: #1a1a1a; display: flex; align-items: center; padding: 0 12px; cursor: grab; border-bottom: 1px solid #222; }
+        .phone-dots { display: flex; gap: 6px; }
+        .p-dot { width: 10px; height: 10px; border-radius: 50%; cursor: pointer; }
+        
+        .viewport { flex-grow: 1; padding: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-content: start; background: #050505; }
+        .app { aspect-ratio: 1; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 18px; color: #fff; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .app:hover { border-color: var(--m3l-green); background: rgba(46, 204, 113, 0.1); }
+        .app span { font-size: 8px; text-transform: uppercase; margin-top: 4px; color: #666; }
+
+        #term { height: 0; background: rgba(0,0,0,0.95); transition: 0.3s; overflow: hidden; font-family: monospace; color: var(--m3l-green); font-size: 10px; }
+        .admin-active #term { height: 110px; border-top: 1px solid #222; padding: 10px; }
+
+        #shifu { position: fixed; bottom: 20px; width: 100%; text-align: center; color: #888; font-style: italic; font-size: 12px; pointer-events: none; }
+        .resizer { position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; cursor: nwse-resize; background: transparent; }
+    </style>
+</head>
+<body id="master-body">
+
+    <div class="top-nav">
+        <a href="#">Gmail</a>
+        <a href="#">Images</a>
+        <div class="grid-icon" onmousedown="startAdminTimer()" onmouseup="stopAdminTimer()">
+            <div class="dot-icon"></div><div class="dot-icon"></div><div class="dot-icon"></div>
+            <div class="dot-icon"></div><div class="dot-icon"></div><div class="dot-icon"></div>
+            <div class="dot-icon"></div><div class="dot-icon"></div><div class="dot-icon"></div>
+        </div>
+        <div style="width:30px; height:30px; background: #7b1fa2; border-radius:50%; color:white; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="location.reload()">J</div>
+    </div>
+
+    <div class="main-search">
+        <div class="logo" id="main-logo">Mosh<span>3L</span></div>
+        <div class="search-box">
+            <span>🔍&nbsp;</span>
+            <input type="text" id="cmd" placeholder="Search Google or type a URL" onkeypress="handleSearch(event)">
+        </div>
+
+        <div class="shortcuts">
+            <div class="shortcut" onclick="window.open('https://youtube.com')"><div class="icon-circle">📺</div>YouTube</div>
+            <div class="shortcut" onclick="openDiscord()"><div class="icon-circle" style="background: #5865F2; color:white;">💬</div>Discord</div>
+            <div class="shortcut" onclick="runCleaner()"><div class="icon-circle">🛡️</div>Cleaner</div>
+            <div class="shortcut" onclick="window.open('https://github.com')"><div class="icon-circle">🐙</div>GitHub</div>
+        </div>
+    </div>
+
+    <div id="g-phone">
+        <canvas id="matrix-canvas"></canvas>
+        <div class="phone-header" id="handle">
+            <div class="phone-dots">
+                <div class="p-dot" style="background:#ff5f57" onclick="panic()"></div> 
+                <div class="p-dot" style="background:#febc2e" onclick="toggleGhost()"></div> 
+                <div class="p-dot" style="background:#2ecc71" onclick="auth()"></div> 
+            </div>
+            <div style="flex-grow:1; text-align:center; font-size:9px; color:#555; letter-spacing:1px;">MOSH3L SECURE</div>
+        </div>
+
+        <div class="viewport">
+            <div class="app" onclick="location.href='mailto:'">✉️<span>Mail</span></div>
+            <div class="app" onclick="document.getElementById('cmd').focus()">🔍<span>Search</span></div>
+            <div class="app" onclick="openDiscord()">📻<span>Signal</span></div>
+            <div class="app" onclick="window.open('https://youtube.com')">📺<span>Stream</span></div>
+            <div class="app" onclick="window.open('https://github.com')">📁<span>Vault</span></div>
+            <div class="app" onclick="runCleaner()">🛡️<span>Clean</span></div>
+        </div>
+
+        <div id="term">
+            <div id="out">>> STANDBY...</div>
+            <input type="text" id="in" style="background:transparent; border:none; color:#fff; width:100%; outline:none; font-family:monospace;" placeholder="_">
+        </div>
+        <div class="resizer" id="resize"></div>
+    </div>
+
+    <div id="shifu">"The screen hides the intent. What are we seeking, student?"</div>
+
+    <script>
+        let phone = document.getElementById('g-phone');
+        let body = document.getElementById('master-body');
+        let isAdmin = false;
+        let adminTimer;
+
+        // --- CORE INITIALIZATION ---
+        window.onload = () => {
+            makeDraggable(phone, document.getElementById('handle'));
+            makeResizable(phone, document.getElementById('resize'));
+            initMatrix();
+        };
+
+        // --- GLOBAL ACTIONS ---
+        function auth() {
+            let p = prompt("ROOT ACCESS:");
+            if(p === "1738A") {
+                isAdmin = true;
+                body.classList.add('admin-active');
+                phone.classList.add('admin-active');
+                document.getElementById('shifu').innerText = "Master detected. Matrix-Nexus Link Active.";
+                log("ACCESS GRANTED. HELLO MASTER.");
+            }
+        }
+
+        function panic() {
+            isAdmin = false;
+            body.classList.remove('admin-active');
+            phone.classList.remove('admin-active');
+            body.classList.remove('ghost');
+            phone.classList.remove('ghost');
+            document.getElementById('shifu').innerText = "The screen hides the intent. What are we seeking, student?";
+            document.getElementById('out').innerHTML = ">> STANDBY...";
+        }
+
+        function toggleGhost() {
+            body.classList.toggle('ghost');
+            phone.classList.toggle('ghost');
+        }
+
+        function handleSearch(e) {
+            if(e.key === 'Enter') {
+                const val = e.target.value;
+                if(isAdmin) {
+                    if(val === 'panic') { panic(); e.target.value = ''; return; }
+                    if(val === 'ghost') { toggleGhost(); e.target.value = ''; return; }
+                }
+                window.open(`https://www.google.com/search?q=${val}`, '_blank');
+            }
+        }
+
+        function openDiscord() {
+            alert("Contact Master: unodaspoon_86028\nRedirecting to anonymous portal...");
+            window.open('https://discord.com/users/unodaspoon_86028', '_blank');
+        }
+
+        function runCleaner() {
+            let p = prompt("M3L PIN:");
+            if(p === "1738") alert("System Swept. Clean as a whistle.");
+        }
+
+        // --- ADMIN LONG-PRESS (GRID) ---
+        function startAdminTimer() { adminTimer = setTimeout(auth, 2000); }
+        function stopAdminTimer() { clearTimeout(adminTimer); }
+
+        // --- TERMINAL LOGIC ---
+        function log(m) { document.getElementById('out').innerHTML += `<br>> ${m}`; }
+        document.getElementById('in').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') {
+                let cmd = e.target.value.toLowerCase();
+                log(cmd.toUpperCase());
+                if(cmd === 'm3l --panic') panic();
+                if(cmd === 'm3l --ghost') toggleGhost();
+                if(cmd === 'clear') document.getElementById('out').innerHTML = ">> SYSTEM READY";
+                e.target.value = '';
+            }
+        });
+
+        // --- WINDOW ENGINES (DRAG/RESIZE) ---
+        function makeDraggable(el, h) {
+            let x=0, y=0, x2=0, y2=0;
+            h.onmousedown = (e) => {
+                x2=e.clientX; y2=e.clientY;
+                document.onmouseup = () => { document.onmousemove = null; };
+                document.onmousemove = (e) => {
+                    x=x2-e.clientX; y=y2-e.clientY; x2=e.clientX; y2=e.clientY;
+                    el.style.top=(el.offsetTop-y)+"px"; el.style.left=(el.offsetLeft-x)+"px";
+                };
+            };
+        }
+
+        function makeResizable(el, r) {
+            r.onmousedown = (e) => {
+                e.preventDefault();
+                document.onmouseup = () => { document.onmousemove = null; };
+                document.onmousemove = (e) => {
+                    el.style.width=(e.clientX-el.offsetLeft)+'px';
+                    el.style.height=(e.clientY-el.offsetTop)+'px';
+                };
+            };
+        }
+
+        // --- MATRIX BACKGROUND ENGINE ---
+        function initMatrix() {
+            const c = document.getElementById('matrix-canvas');
+            const ctx = c.getContext('2d');
+            c.width = 400; c.height = 600;
+            const chars = "01M3L";
+            const drops = Array(20).fill(1);
+            setInterval(() => {
+                ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,c.width,c.height);
+                ctx.fillStyle = "#2ecc71";
+                drops.forEach((y, i) => {
+                    const txt = chars[Math.floor(Math.random()*chars.length)];
+                    ctx.fillText(txt, i*20, y*20);
+                    if(y*20 > c.height && Math.random() > 0.975) drops[i]=0;
+                    drops[i]++;
+                });
+            }, 50);
+        }
+    </script>
+</body>
+</html>
